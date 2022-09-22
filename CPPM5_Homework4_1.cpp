@@ -188,25 +188,25 @@ int main()
 
     if (fin.is_open())
     {
-        auto loader = new AddressListLoader();
+        AddressListLoader loader;
         int addrCount = 0;
-        Address** addrList = loader->readAddressList(fin, addrCount);
+        Address** addrList = loader.readAddressList(fin, addrCount);
         fin.close();
         if (addrList)
         {
-            auto sorter = new AddressListReverseSorter();
-            sorter->process(addrList, addrCount);
+            AddressListReverseSorter sorter;
+            sorter.process(addrList, addrCount);
 
             std::ofstream fout(outputFileName);
             if (fout.is_open())
             {
-                auto writer = new AddressListWriter();
-                if (!writer->writeAddressList(fout, addrList, addrCount))
+                AddressListWriter writer;
+                if (!writer.writeAddressList(fout, addrList, addrCount))
                 {
                     std::cout << "Невозможно записать список адресов в файл '" << outputFileName << "'";
                 }
                 fout.close();
-                loader->freeAddressList(addrList, addrCount);
+                loader.freeAddressList(addrList, addrCount);
             }
             else
             {
