@@ -59,38 +59,8 @@ private:
     int _flatNumber;
 };
 
-// Класс для загрузки адресов из файла
-class AddressListLoader
+namespace AddressList
 {
-public:
-    Address** readAddressList(std::ifstream& fin, int& count)
-    {
-        Address** res = nullptr;
-
-        if (fin >> count)
-        {
-            bool addressReadError = false;
-            res = new Address*[count]();
-            for (int i = 0; i < count; ++i)
-            {
-                Address* addr = read(fin);
-                res[i] = addr;
-                if (!addr)
-                {
-                    addressReadError = true;
-                }
-            }
-
-            if (addressReadError)
-            {
-                freeAddressList(res, count);
-                res = nullptr;
-            }
-        }
-        
-        return res;
-    }
-
     void freeAddressList(Address** addrList, int count)
     {
         if (addrList)
@@ -107,8 +77,7 @@ public:
         }
     }
 
-private:
-    Address* read(std::ifstream& fin)
+    Address* readAddress(std::ifstream& fin)
     {
         Address* res = nullptr;
         std::string city;
@@ -127,25 +96,54 @@ private:
 
         return res;
     }
-};
 
-// Класс, который сортирует, меняя порядок массива адресов на обратный
-class AddressListReverseSorter
-{
-public:
-    void process(Address** addrList, const int count)
+    bool writeAddress(std::ofstream& fout, Address* addr)
+    {
+        if (addr)
+        {
+            fout << addr->getCity() << ", " << addr->getStreet() << ", " << addr->getBuildingNumnber() << ", " << addr->getFlatNumber();
+        }
+
+        fout << std::endl;
+        return static_cast<bool>(fout);
+    }
+
+    Address** readAddressList(std::ifstream& fin, int& count)
+    {
+        Address** res = nullptr;
+
+        if (fin >> count)
+        {
+            bool addressReadError = false;
+            res = new Address * [count]();
+            for (int i = 0; i < count; ++i)
+            {
+                Address* addr = readAddress(fin);
+                res[i] = addr;
+                if (!addr)
+                {
+                    addressReadError = true;
+                }
+            }
+
+            if (addressReadError)
+            {
+                freeAddressList(res, count);
+                res = nullptr;
+            }
+        }
+
+        return res;
+    }
+
+    void reverseAddressList(Address** addrList, const int count)
     {
         for (int i = 0; i < count / 2; ++i)
         {
             std::swap(addrList[i], addrList[count - i - 1]);
         }
     }
-};
 
-// Класс для записи массива адресов в файл
-class AddressListWriter
-{
-public:
     bool writeAddressList(std::ofstream& fout, Address** addrList, const int count)
     {
         fout << count << std::endl;
@@ -164,19 +162,8 @@ public:
 
         return false;
     }
+}
 
-private:
-    bool writeAddress(std::ofstream& fout, Address* addr)
-    {
-        if (addr)
-        {
-            fout << addr->getCity() << ", " << addr->getStreet() << ", " << addr->getBuildingNumnber() << ", " << addr->getFlatNumber();
-        }
-
-        fout << std::endl;
-        return static_cast<bool>(fout);
-    }
-};
 
 int main()
 {
@@ -188,31 +175,29 @@ int main()
 
     if (fin.is_open())
     {
-        AddressListLoader loader;
         int addrCount = 0;
-        Address** addrList = loader.readAddressList(fin, addrCount);
+        Address** addrList = AddressList::readAddressList(fin, addrCount);
         fin.close();
         if (addrList)
         {
-            AddressListReverseSorter sorter;
-            sorter.process(addrList, addrCount);
+            AddressList::reverseAddressList(addrList, addrCount);
 
             std::ofstream fout(outputFileName);
             if (fout.is_open())
             {
-                AddressListWriter writer;
-                if (!writer.writeAddressList(fout, addrList, addrCount))
+
+                if (!AddressList::writeAddressList(fout, addrList, addrCount))
                 {
                     std::cout << "Невозможно записать список адресов в файл '" << outputFileName << "'";
                 }
                 fout.close();
-                loader.freeAddressList(addrList, addrCount);
             }
             else
             {
                 std::cout << "Невозможно открыть файл '" << outputFileName << "'";
             }
 
+            AddressList::freeAddressList(addrList, addrCount);
         }
         else
         {
